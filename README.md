@@ -40,7 +40,7 @@ Para mantener un flujo de trabajo ordenado y seguir las mejores prácticas de in
 
 * `main`: Contiene el código de producción completamente funcional y estable.
 * `develop`: Rama de integración donde se consolidan todas las nuevas características antes de ser desplegadas a producción.
-* `feature/*`: Ramas temporales creadas para el desarrollo de características específicas (ej. `feature/registro-usuarios`, `feature/solicitud-tutorias`).
+* `pruebas/*`: Ramas temporales creadas para el desarrollo de características específicas (ej. `pruebas/registro-usuarios`, `pruebas/solicitud-tutorias`).
 * `bugfix/*`: Ramas temporales para la corrección de errores detectados en la integración.
 
 ---
