@@ -1479,18 +1479,17 @@ h1, h2, h3, h4, h5, h6 {
     background-color: rgba(79, 70, 229, 0.02);
 }
 .calendar-avail-block {
-    position: absolute;
-    left: 4px;
-    right: 4px;
+    position: relative;
+    margin: 4px;
+    height: calc(100% - 8px);
     border-radius: 6px;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.85) 0%, rgba(139, 92, 246, 0.85) 100%);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background-color: rgba(16, 185, 129, 0.06);
+    border: 2px dashed rgba(16, 185, 129, 0.4);
+    color: #047857;
     padding: 6px 10px;
     font-size: 11px;
     font-weight: 600;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     z-index: 5;
     overflow: hidden;
     display: flex;
@@ -1499,9 +1498,9 @@ h1, h2, h3, h4, h5, h6 {
     transition: var(--transition);
 }
 .calendar-avail-block:hover {
+    background-color: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.7);
     transform: scale(1.02);
-    box-shadow: var(--shadow);
-    z-index: 10;
 }
 .calendar-avail-block .block-time {
     font-size: 9px;
@@ -1534,6 +1533,59 @@ h1, h2, h3, h4, h5, h6 {
 .calendar-avail-block:hover .block-delete-btn {
     opacity: 1;
 }
+
+/* Calendar Booked Session Block */
+.calendar-session-block {
+    position: relative;
+    margin: 4px;
+    height: calc(100% - 8px);
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    z-index: 6;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.calendar-session-block:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(79, 70, 229, 0.35);
+    z-index: 8;
+}
+.calendar-session-block .session-time {
+    font-size: 9px;
+    opacity: 0.9;
+    font-weight: 700;
+}
+.calendar-session-block .session-subject {
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 2px;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.calendar-session-block .session-student {
+    font-size: 10px;
+    opacity: 0.95;
+    font-weight: 500;
+    margin-top: auto;
+}
+
+/* Today's Column Highlight */
+.today-column {
+    background-color: rgba(79, 70, 229, 0.02) !important;
+}
+
 
 /* Modern Request Cards Layout */
 .requests-cards-grid {

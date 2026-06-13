@@ -1351,12 +1351,18 @@ function renderWeeklyCalendar(avail) {
     const startHour = 8;
     const endHour = 22;
     
+    // Get current day of week (1 = Lunes, ..., 6 = Sábado, 0 = Domingo)
+    const today = new Date();
+    let todayDayIdx = today.getDay(); // 0 is Sunday, 1 is Monday...
+    if (todayDayIdx === 0) todayDayIdx = 7; // Map Sunday to 7
+    
     // Generate base empty slots for the week
     for (let h = startHour; h <= endHour; h++) {
         const timeStr = `${h.toString().padStart(2, '0')}:00`;
         html += `<div class="calendar-hour-label">${timeStr}</div>`;
         for (let d = 1; d <= 6; d++) {
-            html += `<div class="calendar-grid-cell" data-hour="${h}" data-day="${d}"></div>`;
+            const isToday = d === todayDayIdx;
+            html += `<div class="calendar-grid-cell ${isToday ? 'today-column' : ''}" data-hour="${h}" data-day="${d}"></div>`;
         }
     }
     
@@ -1371,6 +1377,7 @@ function renderWeeklyCalendar(avail) {
         'Sábado': 6
     };
     
+    // 1. Draw availability blocks (dashed green)
     avail.forEach(a => {
         const dayIdx = dayIndices[a.day];
         if (!dayIdx) return;
@@ -1391,6 +1398,51 @@ function renderWeeklyCalendar(avail) {
                 <button class="block-delete-btn" onclick="deleteAvailability(${a.id})" title="Eliminar este bloque">
                     <i class="fas fa-trash-alt"></i>
                 </button>
+            </div>
+        `;
+        gridBody.insertAdjacentHTML('beforeend', cardHtml);
+    });
+
+    // 2. Draw accepted/completed tutorias (solid purple) for this teacher
+    let activeSessions = [];
+    if (useSupabase) {
+        // ... (Supabase logic if needed, but since we are mock-mostly we fallback to Local DB)
+    }
+    
+    // Fallback: get from DB.requests
+    activeSessions = DB.requests.filter(r => 
+        r.teacherId === currentUser.id && 
+        (r.status === 'accepted' || r.status === 'completed')
+    );
+
+    activeSessions.forEach(s => {
+        const dateObj = new Date(s.date + 'T00:00:00');
+        const dayName = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
+        const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+        const dayIdx = dayIndices[dayCapitalized];
+        if (!dayIdx) return;
+
+        const startH = parseInt(s.time.split(':')[0]);
+        const duration = 1; // Tutorings are mock 1 hour
+        const endH = startH + duration;
+
+        const colStart = dayIdx + 1;
+        const rowStart = startH - startHour + 1;
+        const rowEnd = rowStart + duration;
+
+        let studentName = 'Estudiante';
+        if (useSupabase) {
+            // ...
+        } else {
+            const student = getUserById(s.studentId);
+            studentName = student ? student.name : 'Estudiante';
+        }
+
+        const cardHtml = `
+            <div class="calendar-session-block" style="grid-column: ${colStart}; grid-row: ${rowStart} / ${rowEnd};" onclick="openRequestDetails(${s.id})">
+                <div class="session-time"><i class="fas fa-graduation-cap"></i> ${s.time} - ${endH}:00</div>
+                <div class="session-subject" title="${s.subject}">${s.subject}</div>
+                <div class="session-student">Est. ${studentName}</div>
             </div>
         `;
         gridBody.insertAdjacentHTML('beforeend', cardHtml);
