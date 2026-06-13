@@ -1297,3 +1297,416 @@ h1, h2, h3, h4, h5, h6 {
 .loading {
     animation: pulse 1.5s infinite;
 }
+
+/* ===== NEW STYLES FOR PREMIUM INTERACTION ===== */
+
+/* Wizard Stepper Styling */
+.wizard-stepper {
+    user-select: none;
+}
+.step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    cursor: default;
+}
+.step-indicator.active .step-circle {
+    background: linear-gradient(135deg, var(--primary), var(--purple)) !important;
+    border-color: transparent !important;
+    color: white !important;
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+.step-indicator.completed .step-circle {
+    background: var(--success) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+.step-indicator.active span {
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+}
+.step-indicator.completed span {
+    color: var(--success) !important;
+    font-weight: 700 !important;
+}
+
+/* Visual Teacher Selection Cards */
+.teacher-card-visual {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+.teacher-card-visual:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+}
+.teacher-card-visual.selected {
+    background-color: var(--primary-light);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-glow);
+}
+.teacher-card-visual .teacher-avatar-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 16px;
+}
+.teacher-card-visual .teacher-info-box {
+    flex: 1;
+}
+.teacher-card-visual .teacher-name-visual {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 2px;
+}
+.teacher-card-visual .teacher-rating-stars {
+    font-size: 12px;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.teacher-card-visual .teacher-specialties {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+.teacher-card-visual .selected-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--primary);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: var(--shadow);
+}
+.teacher-card-visual.selected .selected-badge {
+    display: flex;
+}
+
+/* Time Slot Pills Selector */
+.time-slot-pill {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 30px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.time-slot-pill.available {
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #065f46;
+    background-color: rgba(16, 185, 129, 0.05);
+}
+.time-slot-pill.available:hover {
+    background-color: var(--success);
+    color: white;
+    border-color: var(--success);
+    transform: scale(1.05);
+}
+.time-slot-pill.selected {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+.time-slot-pill.unavailable {
+    background-color: var(--secondary-light);
+    color: var(--text-light);
+    border-color: var(--border);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Visual Weekly Calendar Grid */
+.weekly-calendar-header {
+    background-color: var(--bg);
+}
+.weekly-calendar-body {
+    background-color: var(--border);
+}
+.calendar-hour-label {
+    background: var(--bg);
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-light);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.calendar-grid-cell {
+    background: white;
+    border-right: 1px solid rgba(226, 232, 240, 0.5);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    position: relative;
+    transition: var(--transition);
+}
+.calendar-grid-cell:hover {
+    background-color: rgba(79, 70, 229, 0.02);
+}
+.calendar-avail-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.85) 0%, rgba(139, 92, 246, 0.85) 100%);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    z-index: 5;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition);
+}
+.calendar-avail-block:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow);
+    z-index: 10;
+}
+.calendar-avail-block .block-time {
+    font-size: 9px;
+    opacity: 0.85;
+    font-weight: 700;
+}
+.calendar-avail-block .block-title {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+.calendar-avail-block .block-delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(239, 68, 68, 0.9);
+    border: none;
+    color: white;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 8px;
+    opacity: 0;
+    transition: var(--transition);
+}
+.calendar-avail-block:hover .block-delete-btn {
+    opacity: 1;
+}
+
+/* Modern Request Cards Layout */
+.requests-cards-grid {
+    margin-top: 10px;
+}
+.request-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    border-left: 5px solid var(--border);
+    position: relative;
+}
+.request-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+.request-card.pending { border-left-color: var(--warning); }
+.request-card.accepted { border-left-color: var(--primary); }
+.request-card.completed { border-left-color: var(--success); }
+.request-card.cancelled { border-left-color: var(--secondary); }
+.request-card.rejected { border-left-color: var(--danger); }
+
+.request-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.request-card .user-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.request-card .user-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    border: 1px solid rgba(79, 70, 229, 0.1);
+}
+.request-card .user-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+}
+.request-card .user-role-label {
+    font-size: 10px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.request-card .subject-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 12px;
+    font-family: var(--font-title);
+}
+.request-card .datetime-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--secondary-light);
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-right: 8px;
+    margin-bottom: 12px;
+}
+.request-card .datetime-badge i {
+    color: var(--primary);
+}
+.request-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: auto;
+}
+.request-card .card-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* History KPI Card hovers */
+.h-stat-card {
+    transition: var(--transition);
+}
+.h-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Toggle Views Switch Button Styling */
+.toggle-view-buttons .btn.active {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Print Styling */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .sidebar,
+    .content-header,
+    .view-subtitle,
+    .toggle-view-buttons,
+    .history-actions,
+    .search-group,
+    .filter-bar,
+    .btn,
+    .notifications-toggle,
+    #supabase-indicator {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .view {
+        display: none !important;
+    }
+    #view-history {
+        display: block !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .table-card {
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        padding: 0 !important;
+    }
+    .data-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    .data-table th, .data-table td {
+        border: 1px solid #ddd !important;
+        padding: 8px !important;
+        background: white !important;
+    }
+    .data-table tr:hover td {
+        background-color: white !important;
+        transform: none !important;
+    }
+    .data-table td:first-child, .data-table td:last-child {
+        border-radius: 0 !important;
+    }
+    .history-stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+    }
+    .h-stat-card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+}

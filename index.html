@@ -228,11 +228,17 @@
                     </div>
 
                     <!-- Gráfico Estadístico de Distribución -->
-                    <div class="section-card" style="margin-top: 30px;">
-                        <h3><i class="fas fa-chart-pie"></i> Distribución de Estados de Tutorías</h3>
-                        <div class="chart-container">
-                            <div class="chart-bar-group" id="dashboard-chart-group">
-                                <!-- Cargado dinámicamente -->
+                    <div class="dashboard-charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px;">
+                        <div class="section-card" style="margin-bottom: 0;">
+                            <h3><i class="fas fa-chart-pie"></i> Distribución de Estados</h3>
+                            <div class="chart-wrapper" style="position: relative; height: 260px; width: 100%; margin-top: 15px;">
+                                <canvas id="chart-status-donut"></canvas>
+                            </div>
+                        </div>
+                        <div class="section-card" style="margin-bottom: 0;">
+                            <h3><i class="fas fa-chart-bar"></i> Tutorías por Materia</h3>
+                            <div class="chart-wrapper" style="position: relative; height: 260px; width: 100%; margin-top: 15px;">
+                                <canvas id="chart-subjects-bar"></canvas>
                             </div>
                         </div>
                     </div>
@@ -240,45 +246,114 @@
 
                 <!-- New Request View (Estudiante) -->
                 <div id="view-new-request" class="view">
-                    <p class="view-subtitle">Crea una nueva solicitud de tutoría en menos de 3 pasos</p>
+                    <p class="view-subtitle">Crea una nueva solicitud de tutoría en 3 sencillos pasos</p>
+                    
+                    <!-- Wizard Stepper -->
+                    <div class="wizard-stepper" style="display: flex; justify-content: space-between; margin-bottom: 30px; position: relative;">
+                        <div class="stepper-line" style="position: absolute; top: 18px; left: 10%; right: 10%; height: 4px; background: var(--border); z-index: 1;">
+                            <div id="wizard-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(135deg, var(--primary), var(--purple)); transition: var(--transition);"></div>
+                        </div>
+                        <div class="step-indicator active" id="step-ind-1" style="z-index: 2; text-align: center; width: 30%;">
+                            <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; color: var(--text-light); transition: var(--transition);">1</div>
+                            <span style="font-size: 13px; font-weight: 600; color: var(--text-light);">Docente y Materia</span>
+                        </div>
+                        <div class="step-indicator" id="step-ind-2" style="z-index: 2; text-align: center; width: 30%;">
+                            <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; color: var(--text-light); transition: var(--transition);">2</div>
+                            <span style="font-size: 13px; font-weight: 600; color: var(--text-light);">Fecha y Hora</span>
+                        </div>
+                        <div class="step-indicator" id="step-ind-3" style="z-index: 2; text-align: center; width: 30%;">
+                            <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; color: var(--text-light); transition: var(--transition);">3</div>
+                            <span style="font-size: 13px; font-weight: 600; color: var(--text-light);">Confirmación</span>
+                        </div>
+                    </div>
+
                     <div class="form-card">
-                        <form onsubmit="handleNewRequest(event); return false;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label><i class="fas fa-chalkboard-teacher"></i> Docente</label>
-                                    <select id="req-teacher" required>
-                                        <option value="">Seleccionar docente...</option>
-                                    </select>
+                        <form id="wizard-form" onsubmit="handleNewRequest(event); return false;">
+                            <!-- STEP 1: Docente y Materia -->
+                            <div class="wizard-step active" id="wizard-step-1">
+                                <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-user-tie"></i> Paso 1: Selecciona Docente y Materia</h3>
+                                <div class="form-row">
+                                    <div class="form-group" style="position: relative; grid-column: span 2;">
+                                        <label><i class="fas fa-chalkboard-teacher"></i> Docente</label>
+                                        <select id="req-teacher" required style="display:none;">
+                                            <option value="">Seleccionar docente...</option>
+                                        </select>
+                                        <!-- Visual Teacher Selection Grid -->
+                                        <div class="teachers-grid-cards" id="teachers-visual-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+                                            <!-- Renders dynamically from JS -->
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="grid-column: span 2; margin-top: 15px;">
+                                        <label><i class="fas fa-book"></i> Materia / Tema</label>
+                                        <input type="text" id="req-subject" required placeholder="Ej: Cálculo Diferencial">
+                                        <div style="font-size: 12px; color: var(--text-light); margin-top: 6px;">Escribe el tema o materia específica en la que necesitas apoyo.</div>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label><i class="fas fa-book"></i> Materia / Tema</label>
-                                    <input type="text" id="req-subject" required placeholder="Ej: Cálculo Diferencial">
+                                <div class="form-actions" style="margin-top: 24px; display: flex; justify-content: flex-end;">
+                                    <button type="button" class="btn btn-primary" onclick="wizardNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
                                 </div>
                             </div>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label><i class="fas fa-calendar"></i> Fecha</label>
-                                    <input type="date" id="req-date" required>
+                            <!-- STEP 2: Fecha y Hora -->
+                            <div class="wizard-step" id="wizard-step-2" style="display: none;">
+                                <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-calendar-alt"></i> Paso 2: Elige la Fecha y Hora</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-calendar"></i> Fecha de la Tutoría</label>
+                                        <input type="date" id="req-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="fas fa-clock"></i> Hora de la Tutoría</label>
+                                        <!-- Hidden select for form compatibility -->
+                                        <select id="req-time" required style="display: none;">
+                                            <option value="">Seleccionar horario...</option>
+                                        </select>
+                                        <!-- Visual Time Slots Grid -->
+                                        <div id="visual-time-slots" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;">
+                                            <div style="grid-column: span 4; text-align: center; color: var(--text-light); font-size: 14px; padding: 15px;">Selecciona una fecha primero para ver horarios.</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label><i class="fas fa-clock"></i> Hora</label>
-                                    <select id="req-time" required>
-                                        <option value="">Seleccionar horario...</option>
-                                    </select>
+                                <div class="form-actions" style="margin-top: 24px; display: flex; justify-content: space-between;">
+                                    <button type="button" class="btn btn-secondary" onclick="wizardPrev(1)"><i class="fas fa-arrow-left"></i> Atrás</button>
+                                    <button type="button" class="btn btn-primary" onclick="wizardNext(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label><i class="fas fa-comment"></i> Descripción / Dudas</label>
-                                <textarea id="req-description" rows="4" placeholder="Describe brevemente qué necesitas aprender o resolver..."></textarea>
-                            </div>
+                            <!-- STEP 3: Confirmación -->
+                            <div class="wizard-step" id="wizard-step-3" style="display: none;">
+                                <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-check-circle"></i> Paso 3: Confirmación y Descripción</h3>
+                                <div class="form-group">
+                                    <label><i class="fas fa-comment"></i> Descripción de tus dudas o necesidades</label>
+                                    <textarea id="req-description" rows="4" placeholder="Describe brevemente qué temas específicos te gustaría reforzar en la sesión..."></textarea>
+                                </div>
 
-                            <div class="form-actions">
-                                <button type="button" class="btn btn-secondary" onclick="navigateTo('dashboard')">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane"></i> Enviar Solicitud
-                                </button>
+                                <!-- Booking Summary Card -->
+                                <div class="booking-summary-card" style="background: var(--primary-light); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: var(--radius-sm); padding: 20px; margin-top: 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Docente</div>
+                                        <div style="font-weight: 600; font-size: 15px;" id="summary-teacher">--</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Materia</div>
+                                        <div style="font-weight: 600; font-size: 15px;" id="summary-subject">--</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Fecha</div>
+                                        <div style="font-weight: 600; font-size: 15px;" id="summary-date">--</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Hora</div>
+                                        <div style="font-weight: 600; font-size: 15px;" id="summary-time">--</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions" style="display: flex; justify-content: space-between;">
+                                    <button type="button" class="btn btn-secondary" onclick="wizardPrev(2)"><i class="fas fa-arrow-left"></i> Atrás</button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                                    </button>
+                                </div>
                             </div>
                             <div id="request-error" class="error-message"></div>
                             <div id="request-success" class="success-message"></div>
@@ -289,32 +364,51 @@
                 <!-- My Requests View (Estudiante) -->
                 <div id="view-my-requests" class="view">
                     <p class="view-subtitle">Gestiona tus solicitudes de tutoría</p>
-                    <div class="search-group">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="search-my-requests" oninput="filterMyRequestsTable()" placeholder="Buscar por materia o docente...">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+                        <div class="search-group" style="margin-bottom: 0; flex: 1; max-width: 400px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="search-my-requests" oninput="filterMyRequests()" placeholder="Buscar por materia o docente...">
+                        </div>
+                        <div class="toggle-view-buttons" style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm active" id="btn-my-req-cards" onclick="switchMyRequestsView('cards')"><i class="fas fa-th-large"></i> Tarjetas</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-my-req-table" onclick="switchMyRequestsView('table')"><i class="fas fa-list"></i> Tabla</button>
+                        </div>
                     </div>
-                    <div class="table-card">
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Docente</th>
-                                        <th>Materia</th>
-                                        <th>Fecha</th>
-                                        <th>Hora</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="my-requests-table">
-                                    <!-- Dynamic content -->
-                                </tbody>
-                            </table>
+
+                    <!-- Cards View Container -->
+                    <div id="my-requests-cards-view" class="requests-view-container active">
+                        <div class="requests-cards-grid" id="my-requests-cards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                            <!-- Filled dynamically -->
                         </div>
-                        <div id="my-requests-empty" class="empty-state-box">
-                            <i class="fas fa-clipboard"></i>
-                            <p>No has creado solicitudes aún</p>
+                    </div>
+
+                    <!-- Table View Container -->
+                    <div id="my-requests-table-view" class="requests-view-container" style="display: none;">
+                        <div class="table-card">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Docente</th>
+                                            <th>Materia</th>
+                                            <th>Fecha</th>
+                                            <th>Hora</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="my-requests-table">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+                    </div>
+
+                    <div id="my-requests-empty" class="empty-state-box">
+                        <i class="fas fa-clipboard"></i>
+                        <p>No has creado solicitudes aún</p>
                     </div>
                 </div>
 
@@ -355,78 +449,155 @@
                         </form>
                     </div>
 
-                    <div class="table-card">
-                        <h3><i class="fas fa-list"></i> Mis Horarios Disponibles</h3>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Día</th>
-                                        <th>Hora Inicio</th>
-                                        <th>Hora Fin</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="availability-table">
-                                    <!-- Dynamic content -->
-                                </tbody>
-                            </table>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+                        <h3 style="margin: 0; font-family: var(--font-title); font-size: 18px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-clock" style="color: var(--primary);"></i> Mis Horarios Disponibles</h3>
+                        <div class="toggle-view-buttons" style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm active" id="btn-avail-cal" onclick="switchAvailabilityView('calendar')"><i class="fas fa-calendar-alt"></i> Calendario Semanal</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-avail-table" onclick="switchAvailabilityView('table')"><i class="fas fa-list"></i> Tabla</button>
                         </div>
-                        <div id="availability-empty" class="empty-state-box">
-                            <i class="fas fa-clock"></i>
-                            <p>No has definido horarios aún</p>
+                    </div>
+
+                    <!-- Calendar View Container -->
+                    <div id="availability-calendar-view" class="availability-view-container active">
+                        <div class="calendar-card" style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);">
+                            <div class="weekly-calendar-header" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); gap: 1px; background: var(--border); border-radius: 8px 8px 0 0; overflow: hidden; text-align: center; font-weight: 700; font-size: 13px; color: var(--text);">
+                                <div style="background: var(--bg); padding: 12px 4px;">Hora</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Lunes</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Martes</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Miércoles</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Jueves</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Viernes</div>
+                                <div style="background: var(--bg); padding: 12px 4px;">Sábado</div>
+                            </div>
+                            <div class="weekly-calendar-body" id="weekly-calendar-grid-body" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); grid-auto-rows: 55px; gap: 1px; background: var(--border); border-radius: 0 0 8px 8px; overflow: hidden; position: relative;">
+                                <!-- Dynamically populated rows with hours 08:00 - 22:00 -->
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Table View Container -->
+                    <div id="availability-table-view" class="availability-view-container" style="display: none;">
+                        <div class="table-card">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Día</th>
+                                            <th>Hora Inicio</th>
+                                            <th>Hora Fin</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="availability-table">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="availability-empty" class="empty-state-box">
+                        <i class="fas fa-clock"></i>
+                        <p>No has definido horarios aún</p>
                     </div>
                 </div>
 
                 <div id="view-requests" class="view">
                     <p class="view-subtitle">Revisa y gestiona las solicitudes de tutoría</p>
-                    <div class="search-group">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="search-teacher-requests" oninput="filterTeacherRequestsTable()" placeholder="Buscar por materia o estudiante...">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+                        <div class="search-group" style="margin-bottom: 0; flex: 1; max-width: 400px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="search-teacher-requests" oninput="filterTeacherRequests()" placeholder="Buscar por materia o estudiante...">
+                        </div>
+                        <div class="toggle-view-buttons" style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm active" id="btn-teacher-req-cards" onclick="switchTeacherRequestsView('cards')"><i class="fas fa-th-large"></i> Tarjetas</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-teacher-req-table" onclick="switchTeacherRequestsView('table')"><i class="fas fa-list"></i> Tabla</button>
+                        </div>
                     </div>
-                    <div class="table-card">
-                        <div class="filter-bar">
-                            <button class="filter-btn active" onclick="filterRequests('all')">Todas</button>
-                            <button class="filter-btn" onclick="filterRequests('pending')">Pendientes</button>
-                            <button class="filter-btn" onclick="filterRequests('accepted')">Aceptadas</button>
+
+                    <div class="filter-bar" style="margin-bottom: 20px;">
+                        <button class="filter-btn active" onclick="filterRequests('all')">Todas</button>
+                        <button class="filter-btn" onclick="filterRequests('pending')">Pendientes</button>
+                        <button class="filter-btn" onclick="filterRequests('accepted')">Aceptadas</button>
+                    </div>
+
+                    <!-- Cards View Container -->
+                    <div id="teacher-requests-cards-view" class="requests-view-container active">
+                        <div class="requests-cards-grid" id="teacher-requests-cards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                            <!-- Filled dynamically -->
                         </div>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Estudiante</th>
-                                        <th>Materia</th>
-                                        <th>Fecha</th>
-                                        <th>Hora</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="teacher-requests-table">
-                                    <!-- Dynamic content -->
-                                </tbody>
-                            </table>
+                    </div>
+
+                    <!-- Table View Container -->
+                    <div id="teacher-requests-table-view" class="requests-view-container" style="display: none;">
+                        <div class="table-card">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Estudiante</th>
+                                            <th>Materia</th>
+                                            <th>Fecha</th>
+                                            <th>Hora</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teacher-requests-table">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div id="teacher-requests-empty" class="empty-state-box">
-                            <i class="fas fa-inbox"></i>
-                            <p>No tienes solicitudes pendientes</p>
-                        </div>
+                    </div>
+
+                    <div id="teacher-requests-empty" class="empty-state-box">
+                        <i class="fas fa-inbox"></i>
+                        <p>No tienes solicitudes pendientes</p>
                     </div>
                 </div>
 
                 <div id="view-history" class="view">
                     <p class="view-subtitle">Registro histórico de tutorías</p>
-                    <div class="search-group">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="search-history" oninput="filterHistoryTable()" placeholder="Buscar por materia, docente o estudiante...">
+
+                    <!-- History KPI Grid -->
+                    <div class="history-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div class="h-stat-card" style="background: white; padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); border-bottom: 4px solid var(--success);">
+                            <div style="font-size: 24px; color: var(--success); font-weight: 800; font-family: var(--font-title);" id="h-stat-completed">0</div>
+                            <div style="font-size: 11px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-top: 4px;">Completadas</div>
+                        </div>
+                        <div class="h-stat-card" style="background: white; padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); border-bottom: 4px solid var(--danger);">
+                            <div style="font-size: 24px; color: var(--danger); font-weight: 800; font-family: var(--font-title);" id="h-stat-cancelled">0</div>
+                            <div style="font-size: 11px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-top: 4px;">Canceladas / Rechazadas</div>
+                        </div>
+                        <div class="h-stat-card" style="background: white; padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); border-bottom: 4px solid var(--warning);">
+                            <div style="font-size: 24px; color: var(--warning); font-weight: 800; font-family: var(--font-title);" id="h-stat-rating">0.0 ★</div>
+                            <div style="font-size: 11px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-top: 4px;">Calificación Promedio</div>
+                        </div>
+                        <div class="h-stat-card" style="background: white; padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); border-bottom: 4px solid var(--primary);">
+                            <div style="font-size: 24px; color: var(--primary); font-weight: 800; font-family: var(--font-title);" id="h-stat-hours">0h</div>
+                            <div style="font-size: 11px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-top: 4px;">Horas de Tutoría</div>
+                        </div>
                     </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
+                        <div class="search-group" style="margin-bottom: 0; flex: 1; max-width: 400px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="search-history" oninput="filterHistoryTable()" placeholder="Buscar por materia, docente o estudiante...">
+                        </div>
+                        <div class="history-actions" style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="exportHistoryCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                            <button class="btn btn-secondary btn-sm" onclick="printReport()"><i class="fas fa-print"></i> Imprimir Reporte</button>
+                        </div>
+                    </div>
+
                     <div class="table-card">
                         <div class="filter-bar">
                             <button class="filter-btn active" onclick="filterHistory('all')">Todas</button>
                             <button class="filter-btn" onclick="filterHistory('completed')">Finalizadas</button>
-                            <button class="filter-btn" onclick="filterHistory('cancelled')">Canceladas</button>
-                            <button class="filter-btn" onclick="filterHistory('rejected')">Rechazadas</button>
+                            <button class="filter-btn" onclick="filterHistory('cancelled')"><i class="fas fa-ban"></i> Canceladas</button>
+                            <button class="filter-btn" onclick="filterHistory('rejected')"><i class="fas fa-times-circle"></i> Rechazadas</button>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">
@@ -464,6 +635,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

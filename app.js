@@ -43,6 +43,15 @@ const DB = {
 let currentUser = JSON.parse(sessionStorage.getItem('tc_currentUser')) || null;
 let currentView = 'dashboard';
 
+// ===== PREMIUM LAYOUT & WIZARD VARIABLES =====
+let chartStatusDonutInstance = null;
+let chartSubjectsBarInstance = null;
+
+let myRequestsViewMode = 'cards';
+let teacherRequestsViewMode = 'cards';
+let availabilityViewMode = 'calendar';
+let activeWizardStep = 1;
+
 // ===== NOTIFICATIONS STORE =====
 const notifications = [];
 
@@ -518,54 +527,145 @@ async function loadDashboard() {
 }
 
 function updateDashboardChart(requests) {
-    const chartGroup = document.getElementById('dashboard-chart-group');
-    if (!chartGroup) return;
+    const donutCtx = document.getElementById('chart-status-donut');
+    const barCtx = document.getElementById('chart-subjects-bar');
+    if (!donutCtx || !barCtx) return;
     
     const counts = {
         pending: requests.filter(r => r.status === 'pending').length,
         accepted: requests.filter(r => r.status === 'accepted').length,
         completed: requests.filter(r => r.status === 'completed').length,
-        cancelled: requests.filter(r => r.status === 'cancelled').length
+        cancelled: requests.filter(r => r.status === 'cancelled').length,
+        rejected: requests.filter(r => r.status === 'rejected').length
     };
     
-    const total = counts.pending + counts.accepted + counts.completed + counts.cancelled;
-    const getPercent = (val) => total > 0 ? Math.round((val / total) * 100) : 0;
+    // Destroy previous instances if they exist
+    if (chartStatusDonutInstance) {
+        chartStatusDonutInstance.destroy();
+    }
+    if (chartSubjectsBarInstance) {
+        chartSubjectsBarInstance.destroy();
+    }
     
-    chartGroup.innerHTML = `
-        <div class="chart-bar-row">
-            <span class="chart-label">Pendientes</span>
-            <div class="chart-track">
-                <div class="chart-fill pending" style="width: ${getPercent(counts.pending)}%"></div>
-            </div>
-            <span class="chart-value">${counts.pending}</span>
-        </div>
-        <div class="chart-bar-row">
-            <span class="chart-label">Aceptadas</span>
-            <div class="chart-track">
-                <div class="chart-fill accepted" style="width: ${getPercent(counts.accepted)}%"></div>
-            </div>
-            <span class="chart-value">${counts.accepted}</span>
-        </div>
-        <div class="chart-bar-row">
-            <span class="chart-label">Finalizadas</span>
-            <div class="chart-track">
-                <div class="chart-fill completed" style="width: ${getPercent(counts.completed)}%"></div>
-            </div>
-            <span class="chart-value">${counts.completed}</span>
-        </div>
-        <div class="chart-bar-row">
-            <span class="chart-label">Canceladas</span>
-            <div class="chart-track">
-                <div class="chart-fill cancelled" style="width: ${getPercent(counts.cancelled)}%"></div>
-            </div>
-            <span class="chart-value">${counts.cancelled}</span>
-        </div>
-    `;
+    // Create Donut Chart
+    chartStatusDonutInstance = new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pendientes', 'Aceptadas', 'Finalizadas', 'Canceladas', 'Rechazadas'],
+            datasets: [{
+                data: [counts.pending, counts.accepted, counts.completed, counts.cancelled, counts.rejected],
+                backgroundColor: [
+                    '#f59e0b', // Pending (yellow)
+                    '#4f46e5', // Accepted (indigo)
+                    '#10b981', // Completed (green)
+                    '#64748b', // Cancelled (gray)
+                    '#ef4444'  // Rejected (red)
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            family: 'Inter',
+                            size: 11,
+                            weight: '600'
+                        },
+                        padding: 15
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+    
+    // Calculate subjects count
+    const subjectsMap = {};
+    requests.forEach(r => {
+        subjectsMap[r.subject] = (subjectsMap[r.subject] || 0) + 1;
+    });
+    
+    // Sort and get top subjects
+    const subjectsSorted = Object.entries(subjectsMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+        
+    const barLabels = subjectsSorted.map(item => item[0]);
+    const barData = subjectsSorted.map(item => item[1]);
+    
+    // If no data, show placeholder labels
+    const hasData = barData.length > 0;
+    const finalLabels = hasData ? barLabels : ['Cálculo', 'Álgebra', 'Física', 'Estadística', 'Programación'];
+    const finalData = hasData ? barData : [0, 0, 0, 0, 0];
+    
+    // Create Bar Chart
+    chartSubjectsBarInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: finalLabels,
+            datasets: [{
+                label: 'Cantidad de Tutorías',
+                data: finalData,
+                backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                hoverBackgroundColor: '#4f46e5',
+                borderRadius: 6,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Inter',
+                            size: 10,
+                            weight: '500'
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        borderDash: [5, 5],
+                        color: 'rgba(226, 232, 240, 0.8)'
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            family: 'Inter',
+                            size: 10,
+                            weight: '500'
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // ===== NEW REQUEST (Student) =====
 async function loadNewRequest() {
     try {
+        activeWizardStep = 1;
+        updateWizardProgress();
+
         const teacherSelect = document.getElementById('req-teacher');
         let teachers = [];
         
@@ -587,9 +687,15 @@ async function loadNewRequest() {
             updateTimeSlots(this.value);
         };
 
+        // Render visual cards for teachers
+        renderTeachersVisualGrid();
+
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         document.getElementById('req-date').min = tomorrow.toISOString().split('T')[0];
+
+        // Clear slot grid
+        document.getElementById('visual-time-slots').innerHTML = '<div style="grid-column: span 4; text-align: center; color: var(--text-light); font-size: 14px; padding: 15px;">Selecciona un docente y fecha primero para ver horarios.</div>';
 
         document.getElementById('request-error').classList.remove('show');
         document.getElementById('request-success').classList.remove('show');
@@ -598,13 +704,145 @@ async function loadNewRequest() {
     }
 }
 
+function renderTeachersVisualGrid() {
+    const grid = document.getElementById('teachers-visual-grid');
+    if (!grid) return;
+    
+    const teachers = getAvailableTeachers();
+    
+    grid.innerHTML = teachers.map(t => {
+        // Calculate average rating from DB.requests
+        const tRequests = DB.requests.filter(r => r.teacherId === t.id && r.status === 'completed' && r.rating);
+        const avgRating = tRequests.length > 0 ? (tRequests.reduce((acc, r) => acc + r.rating, 0) / tRequests.length).toFixed(1) : 'S/C';
+        
+        // Define some mock specialties based on their index/name
+        const specialties = t.id === 1 ? 'Matemáticas, Álgebra, Cálculo' : t.id === 3 ? 'Física, Programación, Estadística' : 'Ciencias Generales';
+        const initials = t.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        
+        const isSelected = document.getElementById('req-teacher').value == t.id;
+        
+        return `
+            <div class="teacher-card-visual ${isSelected ? 'selected' : ''}" data-id="${t.id}" onclick="selectTeacherVisual(${t.id})">
+                <div class="teacher-avatar-circle">${initials}</div>
+                <div class="teacher-info-box">
+                    <div class="teacher-name-visual">${t.name}</div>
+                    <div class="teacher-rating-stars">
+                        <i class="fas fa-star"></i> <span>${avgRating}</span>
+                        <span style="color:var(--text-light); font-size:10px; margin-left:4px;">(${tRequests.length} calif.)</span>
+                    </div>
+                    <div class="teacher-specialties">${specialties}</div>
+                </div>
+                <div class="selected-badge"><i class="fas fa-check"></i></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectTeacherVisual(teacherId) {
+    document.getElementById('req-teacher').value = teacherId;
+    document.querySelectorAll('.teacher-card-visual').forEach(card => {
+        if (card.getAttribute('data-id') == teacherId) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+    
+    // Clear time select and selected slot
+    document.getElementById('req-time').value = '';
+    
+    // Trigger update timeslots
+    updateTimeSlots(teacherId);
+}
+
+function selectTimeSlot(time) {
+    document.getElementById('req-time').value = time;
+    document.querySelectorAll('.time-slot-pill.available').forEach(pill => {
+        if (pill.textContent.includes(time)) {
+            pill.classList.add('selected');
+        } else {
+            pill.classList.remove('selected');
+        }
+    });
+}
+
+function wizardNext(step) {
+    if (step === 2) {
+        const teacherId = document.getElementById('req-teacher').value;
+        const subject = document.getElementById('req-subject').value.trim();
+        if (!teacherId) {
+            alert('Por favor selecciona un docente.');
+            return;
+        }
+        if (!subject) {
+            alert('Por favor introduce la materia o tema.');
+            return;
+        }
+        
+        activeWizardStep = 2;
+        updateWizardProgress();
+        updateTimeSlots(teacherId);
+    } else if (step === 3) {
+        const date = document.getElementById('req-date').value;
+        const time = document.getElementById('req-time').value;
+        if (!date) {
+            alert('Por favor selecciona una fecha.');
+            return;
+        }
+        if (!time) {
+            alert('Por favor selecciona una hora disponible.');
+            return;
+        }
+        
+        const teacherId = document.getElementById('req-teacher').value;
+        const teacher = getUserById(parseInt(teacherId));
+        const teacherName = teacher ? teacher.name : 'Docente';
+        const subject = document.getElementById('req-subject').value;
+        
+        document.getElementById('summary-teacher').textContent = teacherName;
+        document.getElementById('summary-subject').textContent = subject;
+        document.getElementById('summary-date').textContent = formatDate(date);
+        document.getElementById('summary-time').textContent = time + ' H';
+        
+        activeWizardStep = 3;
+        updateWizardProgress();
+    }
+}
+
+function wizardPrev(step) {
+    activeWizardStep = step;
+    updateWizardProgress();
+}
+
+function updateWizardProgress() {
+    document.querySelectorAll('.wizard-step').forEach((el, index) => {
+        el.style.display = (index + 1) === activeWizardStep ? 'block' : 'none';
+    });
+    
+    const progress = activeWizardStep === 1 ? 0 : activeWizardStep === 2 ? 50 : 100;
+    const progressBar = document.getElementById('wizard-progress-bar');
+    if (progressBar) progressBar.style.width = progress + '%';
+    
+    document.querySelectorAll('.step-indicator').forEach((el, index) => {
+        const stepNum = index + 1;
+        el.classList.remove('active', 'completed');
+        if (stepNum === activeWizardStep) {
+            el.classList.add('active');
+        } else if (stepNum < activeWizardStep) {
+            el.classList.add('completed');
+        }
+    });
+}
+
 async function updateTimeSlots(teacherId) {
     try {
         const timeSelect = document.getElementById('req-time');
+        const visualSlots = document.getElementById('visual-time-slots');
         const dateInput = document.getElementById('req-date').value;
 
         if (!teacherId) {
             timeSelect.innerHTML = '<option value="">Seleccionar horario...</option>';
+            visualSlots.innerHTML = '<div style="grid-column: span 4; text-align: center; color: var(--text-light); font-size: 14px; padding: 15px;">Selecciona un docente y fecha primero para ver horarios.</div>';
             return;
         }
 
@@ -622,6 +860,7 @@ async function updateTimeSlots(teacherId) {
 
         if (!dateInput) {
             timeSelect.innerHTML = '<option value="">Primero selecciona una fecha</option>';
+            visualSlots.innerHTML = '<div style="grid-column: span 4; text-align: center; color: var(--text-light); font-size: 14px; padding: 15px;">Selecciona una fecha primero para ver horarios disponibles.</div>';
             return;
         }
 
@@ -632,6 +871,7 @@ async function updateTimeSlots(teacherId) {
 
         if (dayAvail.length === 0) {
             timeSelect.innerHTML = '<option value="">El docente no tiene disponibilidad este día</option>';
+            visualSlots.innerHTML = '<div style="grid-column: span 4; text-align: center; color: var(--danger); font-weight: 600; font-size: 14px; padding: 15px;"><i class="fas fa-exclamation-circle"></i> El docente no tiene disponibilidad registrada para los ' + dayCapitalized + 's.</div>';
             return;
         }
 
@@ -644,8 +884,50 @@ async function updateTimeSlots(teacherId) {
             }
         });
 
+        // Check slots capacity (maximum 2 accepted slots)
+        let scheduledSessions = [];
+        if (useSupabase) {
+            const { data, error } = await supabaseClient
+                .from('requests')
+                .select('time')
+                .eq('teacher_id', teacherId)
+                .eq('date', dateInput)
+                .eq('status', 'accepted');
+            if (error) throw error;
+            scheduledSessions = data || [];
+        } else {
+            scheduledSessions = DB.requests.filter(r => 
+                r.teacherId === parseInt(teacherId) && 
+                r.date === dateInput && 
+                r.status === 'accepted'
+            );
+        }
+
+        const slotCounts = {};
+        scheduledSessions.forEach(s => {
+            const timeVal = s.time.substring(0, 5);
+            slotCounts[timeVal] = (slotCounts[timeVal] || 0) + 1;
+        });
+
         timeSelect.innerHTML = '<option value="">Seleccionar hora...</option>' +
             slots.map(s => `<option value="${s}">${s}</option>`).join('');
+
+        visualSlots.innerHTML = slots.map(s => {
+            const count = slotCounts[s] || 0;
+            const isFull = count >= 2;
+            const isSelected = timeSelect.value === s;
+            
+            if (isFull) {
+                return `<div class="time-slot-pill unavailable" title="Cupo de 2 tutorías lleno">
+                    <i class="fas fa-ban"></i> ${s} (Lleno)
+                </div>`;
+            } else {
+                const badge = count === 1 ? `<span style="font-size: 9px; background: var(--warning); color: white; padding: 1px 4px; border-radius: 4px; margin-left: 4px;">1/2 ocupado</span>` : '';
+                return `<div class="time-slot-pill available ${isSelected ? 'selected' : ''}" onclick="selectTimeSlot('${s}')">
+                    <i class="fas fa-clock"></i> ${s} ${badge}
+                </div>`;
+            }
+        }).join('');
     } catch (err) {
         console.error('Error en updateTimeSlots:', err);
     }
@@ -768,11 +1050,16 @@ async function loadMyRequests() {
 
         if (requests.length === 0) {
             tableBody.innerHTML = '';
+            const container = document.getElementById('my-requests-cards-container');
+            if (container) container.innerHTML = '';
             emptyEl.classList.add('show');
             return;
         }
 
         emptyEl.classList.remove('show');
+
+        // Render visual cards
+        renderMyRequestsCards(requests);
 
         tableBody.innerHTML = requests.sort((a, b) => {
             const dateA = new Date(a.created_at || a.createdAt);
@@ -805,8 +1092,124 @@ async function loadMyRequests() {
                 </tr>
             `;
         }).join('');
+
+        filterMyRequests();
     } catch (err) {
         console.error('Error en loadMyRequests:', err);
+    }
+}
+
+function renderMyRequestsCards(requests) {
+    const container = document.getElementById('my-requests-cards-container');
+    if (!container) return;
+    
+    container.innerHTML = requests.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt);
+        const dateB = new Date(b.created_at || b.createdAt);
+        return dateB - dateA;
+    }).map(r => {
+        let teacherName = 'Docente';
+        if (useSupabase) {
+            teacherName = r.teacher ? r.teacher.name : 'Docente';
+        } else {
+            const teacher = getUserById(r.teacherId);
+            teacherName = teacher ? teacher.name : 'Docente';
+        }
+        
+        const initials = teacherName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        const canCancel = r.status === 'pending' || r.status === 'accepted';
+        const canEdit = r.status === 'pending';
+
+        return `
+            <div class="request-card ${r.status}" onclick="openRequestDetails(${r.id})" style="cursor: pointer;">
+                <div class="request-card-header">
+                    <div class="user-meta">
+                        <div class="user-circle">${initials}</div>
+                        <div>
+                            <div class="user-name">${teacherName}</div>
+                            <div class="user-role-label">Docente Asignado</div>
+                        </div>
+                    </div>
+                    <span class="status-badge status-${r.status}"><i class="fas ${getStatusIcon(r.status)}"></i> ${getStatusLabel(r.status)}</span>
+                </div>
+                <div class="subject-title">${r.subject}</div>
+                <div style="margin-bottom: 8px;">
+                    <div class="datetime-badge"><i class="far fa-calendar-alt"></i> ${formatDate(r.date)}</div>
+                    <div class="datetime-badge"><i class="far fa-clock"></i> ${r.time} H</div>
+                </div>
+                <div style="font-size: 13px; color: var(--text-light); font-style: italic; max-height: 40px; overflow: hidden; text-overflow: ellipsis; margin-bottom: 16px;">
+                    ${r.description ? `"${r.description}"` : 'Sin descripción de dudas'}
+                </div>
+                <div class="request-card-footer" onclick="event.stopPropagation();">
+                    <div class="stars-container">
+                        ${r.status === 'completed' && r.rating ? `<span class="stars-display">${getStarsHTML(r.rating)}</span>` : ''}
+                        ${r.status === 'completed' && !r.rating ? `<button class="btn btn-sm btn-primary" onclick="openRatingModal(${r.id})"><i class="fas fa-star"></i> Calificar</button>` : ''}
+                    </div>
+                    <div class="card-actions">
+                        ${canEdit ? `<button class="btn btn-sm btn-warning" onclick="editRequest(${r.id})" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
+                        ${canCancel ? `<button class="btn btn-sm btn-danger" onclick="cancelRequest(${r.id})" title="Cancelar"><i class="fas fa-ban"></i></button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function switchMyRequestsView(mode) {
+    myRequestsViewMode = mode;
+    
+    const btnCards = document.getElementById('btn-my-req-cards');
+    const btnTable = document.getElementById('btn-my-req-table');
+    const viewCards = document.getElementById('my-requests-cards-view');
+    const viewTable = document.getElementById('my-requests-table-view');
+    
+    if (mode === 'cards') {
+        if (btnCards) btnCards.classList.add('active');
+        if (btnTable) btnTable.classList.remove('active');
+        if (viewCards) viewCards.style.display = 'block';
+        if (viewTable) viewTable.style.display = 'none';
+    } else {
+        if (btnCards) btnCards.classList.remove('active');
+        if (btnTable) btnTable.classList.add('active');
+        if (viewCards) viewCards.style.display = 'none';
+        if (viewTable) viewTable.style.display = 'block';
+    }
+}
+
+function filterMyRequests() {
+    const searchVal = document.getElementById('search-my-requests').value.toLowerCase().trim();
+    
+    // Filter table rows
+    const rows = document.querySelectorAll('#my-requests-table tr');
+    rows.forEach(row => {
+        const teacherName = row.cells[0]?.textContent.toLowerCase() || '';
+        const subject = row.cells[1]?.textContent.toLowerCase() || '';
+        if (teacherName.includes(searchVal) || subject.includes(searchVal)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Filter cards
+    const cards = document.querySelectorAll('#my-requests-cards-container .request-card');
+    let visibleCards = 0;
+    cards.forEach(card => {
+        const teacherName = card.querySelector('.user-name')?.textContent.toLowerCase() || '';
+        const subject = card.querySelector('.subject-title')?.textContent.toLowerCase() || '';
+        if (teacherName.includes(searchVal) || subject.includes(searchVal)) {
+            card.style.display = 'flex';
+            visibleCards++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    const emptyEl = document.getElementById('my-requests-empty');
+    if (cards.length > 0 && visibleCards === 0) {
+        emptyEl.classList.add('show');
+    } else if (cards.length > 0) {
+        emptyEl.classList.remove('show');
     }
 }
 
@@ -853,13 +1256,34 @@ async function editRequest(requestId) {
     if (!request) return;
 
     navigateTo('new-request');
-    document.getElementById('req-teacher').value = useSupabase ? request.teacher_id : request.teacherId;
+    const teacherId = useSupabase ? request.teacher_id : request.teacherId;
+    document.getElementById('req-teacher').value = teacherId;
     document.getElementById('req-subject').value = request.subject;
     document.getElementById('req-date').value = request.date;
-    await updateTimeSlots(useSupabase ? request.teacher_id : request.teacherId);
+    
+    // Highlight visual card selection
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.teacher-card-visual');
+        cards.forEach(card => {
+            if (card.getAttribute('data-id') == teacherId) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+    }, 150);
+    
+    await updateTimeSlots(teacherId);
     setTimeout(() => {
         document.getElementById('req-time').value = request.time;
-    }, 100);
+        // Highlight pill selection
+        const pills = document.querySelectorAll('.time-slot-pill.available');
+        pills.forEach(pill => {
+            if (pill.textContent.includes(request.time)) {
+                pill.classList.add('selected');
+            }
+        });
+    }, 250);
     document.getElementById('req-description').value = request.description;
 
     if (useSupabase) {
@@ -889,9 +1313,15 @@ async function loadAvailability() {
 
         if (avail.length === 0) {
             tableBody.innerHTML = '';
+            const calendarGrid = document.getElementById('weekly-calendar-grid-body');
+            if (calendarGrid) calendarGrid.innerHTML = '';
             emptyEl.classList.add('show');
         } else {
             emptyEl.classList.remove('show');
+            
+            // Render calendar view
+            renderWeeklyCalendar(avail);
+            
             tableBody.innerHTML = avail.map(a => `
                 <tr>
                     <td>${a.day}</td>
@@ -910,6 +1340,83 @@ async function loadAvailability() {
         document.getElementById('avail-success').classList.remove('show');
     } catch (err) {
         console.error('Error en loadAvailability:', err);
+    }
+}
+
+function renderWeeklyCalendar(avail) {
+    const gridBody = document.getElementById('weekly-calendar-grid-body');
+    if (!gridBody) return;
+    
+    let html = '';
+    const startHour = 8;
+    const endHour = 22;
+    
+    // Generate base empty slots for the week
+    for (let h = startHour; h <= endHour; h++) {
+        const timeStr = `${h.toString().padStart(2, '0')}:00`;
+        html += `<div class="calendar-hour-label">${timeStr}</div>`;
+        for (let d = 1; d <= 6; d++) {
+            html += `<div class="calendar-grid-cell" data-hour="${h}" data-day="${d}"></div>`;
+        }
+    }
+    
+    gridBody.innerHTML = html;
+    
+    const dayIndices = {
+        'Lunes': 1,
+        'Martes': 2,
+        'Miércoles': 3,
+        'Jueves': 4,
+        'Viernes': 5,
+        'Sábado': 6
+    };
+    
+    avail.forEach(a => {
+        const dayIdx = dayIndices[a.day];
+        if (!dayIdx) return;
+        
+        const startH = parseInt(a.start.split(':')[0]);
+        const endH = parseInt(a.end.split(':')[0]);
+        const duration = endH - startH;
+        if (duration <= 0) return;
+        
+        const colStart = dayIdx + 1;
+        const rowStart = startH - startHour + 1;
+        const rowEnd = rowStart + duration;
+        
+        const cardHtml = `
+            <div class="calendar-avail-block" style="grid-column: ${colStart}; grid-row: ${rowStart} / ${rowEnd};">
+                <div class="block-time"><i class="far fa-clock"></i> ${a.start} - ${a.end}</div>
+                <div class="block-title">Disponible</div>
+                <button class="block-delete-btn" onclick="deleteAvailability(${a.id})" title="Eliminar este bloque">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        gridBody.insertAdjacentHTML('beforeend', cardHtml);
+    });
+}
+
+function switchAvailabilityView(mode) {
+    availabilityViewMode = mode;
+    
+    const btnCal = document.getElementById('btn-avail-cal');
+    const btnTab = document.getElementById('btn-avail-table');
+    const viewCal = document.getElementById('availability-calendar-view');
+    const viewTab = document.getElementById('availability-table-view');
+    
+    if (mode === 'calendar') {
+        if (btnCal) btnCal.classList.add('active');
+        if (btnTab) btnTab.classList.remove('active');
+        if (viewCal) viewCal.style.display = 'block';
+        if (viewTab) viewTab.style.display = 'none';
+        loadAvailability();
+    } else {
+        if (btnCal) btnCal.classList.remove('active');
+        if (btnTab) btnTab.classList.add('active');
+        if (viewCal) viewCal.style.display = 'none';
+        if (viewTab) viewTab.style.display = 'block';
+        loadAvailability();
     }
 }
 
@@ -1019,11 +1526,16 @@ async function loadTeacherRequests() {
 
         if (requests.length === 0) {
             tableBody.innerHTML = '';
+            const container = document.getElementById('teacher-requests-cards-container');
+            if (container) container.innerHTML = '';
             emptyEl.classList.add('show');
             return;
         }
 
         emptyEl.classList.remove('show');
+
+        // Render both views
+        renderTeacherRequestsCards(requests);
 
         tableBody.innerHTML = requests.sort((a, b) => {
             const dateA = new Date(a.created_at || a.createdAt);
@@ -1058,8 +1570,126 @@ async function loadTeacherRequests() {
                 </tr>
             `;
         }).join('');
+
+        filterTeacherRequests();
     } catch (err) {
         console.error('Error en loadTeacherRequests:', err);
+    }
+}
+
+function renderTeacherRequestsCards(requests) {
+    const container = document.getElementById('teacher-requests-cards-container');
+    if (!container) return;
+    
+    container.innerHTML = requests.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt);
+        const dateB = new Date(b.created_at || b.createdAt);
+        return dateB - dateA;
+    }).map(r => {
+        let studentName = 'Estudiante';
+        if (useSupabase) {
+            studentName = r.student ? r.student.name : 'Estudiante';
+        } else {
+            const student = getUserById(r.studentId);
+            studentName = student ? student.name : 'Estudiante';
+        }
+        
+        const initials = studentName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        const isPending = r.status === 'pending';
+
+        return `
+            <div class="request-card ${r.status}" onclick="openRequestDetails(${r.id})" style="cursor: pointer;">
+                <div class="request-card-header">
+                    <div class="user-meta">
+                        <div class="user-circle">${initials}</div>
+                        <div>
+                            <div class="user-name">${studentName}</div>
+                            <div class="user-role-label">Estudiante</div>
+                        </div>
+                    </div>
+                    <span class="status-badge status-${r.status}"><i class="fas ${getStatusIcon(r.status)}"></i> ${getStatusLabel(r.status)}</span>
+                </div>
+                <div class="subject-title">${r.subject}</div>
+                <div style="margin-bottom: 8px;">
+                    <div class="datetime-badge"><i class="far fa-calendar-alt"></i> ${formatDate(r.date)}</div>
+                    <div class="datetime-badge"><i class="far fa-clock"></i> ${r.time} H</div>
+                </div>
+                <div style="font-size: 13px; color: var(--text-light); font-style: italic; max-height: 40px; overflow: hidden; text-overflow: ellipsis; margin-bottom: 16px;">
+                    ${r.description ? `"${r.description}"` : 'Sin descripción de dudas'}
+                </div>
+                <div class="request-card-footer" onclick="event.stopPropagation();">
+                    <div class="rating-display">
+                        ${r.rating ? `<span class="stars-display">${getStarsHTML(r.rating)}</span>` : '<span style="font-size: 12px; color:var(--text-light); font-style: italic;">Sin calificación aún</span>'}
+                    </div>
+                    <div class="card-actions">
+                        ${isPending ? `
+                            <button class="btn btn-sm btn-success" onclick="acceptRequest(${r.id})" title="Aceptar"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectRequest(${r.id})" title="Rechazar"><i class="fas fa-times"></i></button>
+                        ` : r.status === 'accepted' ? `
+                            <button class="btn btn-sm btn-primary" onclick="completeRequest(${r.id})"><i class="fas fa-check-double"></i> Finalizar</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function switchTeacherRequestsView(mode) {
+    teacherRequestsViewMode = mode;
+    
+    const btnCards = document.getElementById('btn-teacher-req-cards');
+    const btnTable = document.getElementById('btn-teacher-req-table');
+    const viewCards = document.getElementById('teacher-requests-cards-view');
+    const viewTable = document.getElementById('teacher-requests-table-view');
+    
+    if (mode === 'cards') {
+        if (btnCards) btnCards.classList.add('active');
+        if (btnTable) btnTable.classList.remove('active');
+        if (viewCards) viewCards.style.display = 'block';
+        if (viewTable) viewTable.style.display = 'none';
+    } else {
+        if (btnCards) btnCards.classList.remove('active');
+        if (btnTable) btnTable.classList.add('active');
+        if (viewCards) viewCards.style.display = 'none';
+        if (viewTable) viewTable.style.display = 'block';
+    }
+}
+
+function filterTeacherRequests() {
+    const searchVal = document.getElementById('search-teacher-requests').value.toLowerCase().trim();
+    
+    // Filter table rows
+    const rows = document.querySelectorAll('#teacher-requests-table tr');
+    rows.forEach(row => {
+        const studentName = row.cells[0]?.textContent.toLowerCase() || '';
+        const subject = row.cells[1]?.textContent.toLowerCase() || '';
+        if (studentName.includes(searchVal) || subject.includes(searchVal)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Filter cards
+    const cards = document.querySelectorAll('#teacher-requests-cards-container .request-card');
+    let visibleCards = 0;
+    cards.forEach(card => {
+        const studentName = card.querySelector('.user-name')?.textContent.toLowerCase() || '';
+        const subject = card.querySelector('.subject-title')?.textContent.toLowerCase() || '';
+        if (studentName.includes(searchVal) || subject.includes(searchVal)) {
+            card.style.display = 'flex';
+            visibleCards++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    const emptyEl = document.getElementById('teacher-requests-empty');
+    if (cards.length > 0 && visibleCards === 0) {
+        emptyEl.classList.add('show');
+    } else if (cards.length > 0) {
+        emptyEl.classList.remove('show');
     }
 }
 
@@ -1221,6 +1851,20 @@ async function loadHistory() {
         const tableBody = document.getElementById('history-table');
         const emptyEl = document.getElementById('history-empty');
 
+        // Calculate statistics for KPI cards
+        const completed = requests.filter(r => r.status === 'completed');
+        const cancelled = requests.filter(r => r.status === 'cancelled' || r.status === 'rejected');
+        const rated = completed.filter(r => r.rating);
+        const avgRating = rated.length > 0 ? (rated.reduce((acc, r) => acc + r.rating, 0) / rated.length).toFixed(1) : '0.0';
+        
+        // Mock each tutoring is 1 hour
+        const totalHours = completed.length;
+        
+        document.getElementById('h-stat-completed').textContent = completed.length;
+        document.getElementById('h-stat-cancelled').textContent = cancelled.length;
+        document.getElementById('h-stat-rating').textContent = `${avgRating} ★`;
+        document.getElementById('h-stat-hours').textContent = `${totalHours}h`;
+
         if (requests.length === 0) {
             tableBody.innerHTML = '';
             emptyEl.classList.add('show');
@@ -1258,6 +1902,53 @@ async function loadHistory() {
     }
 }
 
+function exportHistoryCSV() {
+    let requests = [];
+    if (currentUser.role === 'estudiante') {
+        requests = DB.requests.filter(r => r.studentId === currentUser.id && r.status !== 'pending');
+    } else {
+        requests = DB.requests.filter(r => r.teacherId === currentUser.id && r.status !== 'pending');
+    }
+    
+    if (requests.length === 0) {
+        alert('No hay tutorías en el historial para exportar.');
+        return;
+    }
+    
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel encoding
+    csvContent += "Materia/Tema,Estudiante/Docente,Fecha,Hora,Estado,Fecha de Solicitud,Calificación\r\n";
+    
+    requests.forEach(r => {
+        let partnerName = 'Usuario';
+        if (currentUser.role === 'estudiante') {
+            const t = getUserById(r.teacherId);
+            partnerName = t ? t.name : 'Docente';
+        } else {
+            const s = getUserById(r.studentId);
+            partnerName = s ? s.name : 'Estudiante';
+        }
+        
+        const createdDate = new Date(r.created_at || r.createdAt).toLocaleDateString('es-ES');
+        const ratingText = r.rating ? `${r.rating} estrellas` : 'Sin calificar';
+        const statusLabel = getStatusLabel(r.status);
+        
+        csvContent += `"${r.subject}","${partnerName}","${r.date}","${r.time}","${statusLabel}","${createdDate}","${ratingText}"\r\n`;
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `TutorConnect_Historial_${currentUser.name.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addNotification('Historial exportado como archivo CSV.', 'success');
+}
+
+function printReport() {
+    window.print();
+}
+
 function filterHistory(filter) {
     historyFilter = filter;
     const buttons = document.querySelectorAll('#view-history .filter-btn');
@@ -1267,34 +1958,6 @@ function filterHistory(filter) {
 }
 
 // ===== REALTIME TABLE FILTERS =====
-function filterMyRequestsTable() {
-    const searchVal = document.getElementById('search-my-requests').value.toLowerCase().trim();
-    const rows = document.querySelectorAll('#my-requests-table tr');
-    rows.forEach(row => {
-        const teacherName = row.cells[0]?.textContent.toLowerCase() || '';
-        const subject = row.cells[1]?.textContent.toLowerCase() || '';
-        if (teacherName.includes(searchVal) || subject.includes(searchVal)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
-
-function filterTeacherRequestsTable() {
-    const searchVal = document.getElementById('search-teacher-requests').value.toLowerCase().trim();
-    const rows = document.querySelectorAll('#teacher-requests-table tr');
-    rows.forEach(row => {
-        const studentName = row.cells[0]?.textContent.toLowerCase() || '';
-        const subject = row.cells[1]?.textContent.toLowerCase() || '';
-        if (studentName.includes(searchVal) || subject.includes(searchVal)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
-
 function filterHistoryTable() {
     const searchVal = document.getElementById('search-history').value.toLowerCase().trim();
     const rows = document.querySelectorAll('#history-table tr');
