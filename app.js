@@ -1359,10 +1359,11 @@ function renderWeeklyCalendar(avail) {
     // Generate base empty slots for the week
     for (let h = startHour; h <= endHour; h++) {
         const timeStr = `${h.toString().padStart(2, '0')}:00`;
-        html += `<div class="calendar-hour-label">${timeStr}</div>`;
+        const r = h - startHour + 1;
+        html += `<div class="calendar-hour-label" style="grid-column: 1; grid-row: ${r};">${timeStr}</div>`;
         for (let d = 1; d <= 6; d++) {
             const isToday = d === todayDayIdx;
-            html += `<div class="calendar-grid-cell ${isToday ? 'today-column' : ''}" data-hour="${h}" data-day="${d}"></div>`;
+            html += `<div class="calendar-grid-cell ${isToday ? 'today-column' : ''}" style="grid-column: ${d + 1}; grid-row: ${r};" data-hour="${h}" data-day="${d}"></div>`;
         }
     }
     
